@@ -1,0 +1,13 @@
+{
+  "name": "03 Write Log",
+  "nodes": [
+    {"parameters":{"inputSource":"passthrough"},"id":"0ac13156-ac6c-4074-aae7-5697647abe9a","name":"Start Write Log","type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.3,"position":[0,0]},
+    {"parameters":{"assignments":{"assignments":[{"id":"log-timestamp","name":"timestamp","value":"={{ $now.toISO() }}","type":"string"},{"id":"log-level","name":"level","value":"={{ $json.level || \"info\" }}","type":"string"},{"id":"log-event","name":"event","value":"={{ $json.event || \"log\" }}","type":"string"},{"id":"log-message","name":"message","value":"={{ $json.message || \"\" }}","type":"string"},{"id":"log-meta","name":"meta","value":"={{ $json.meta || {} }}","type":"object"}]},"options":{}},"id":"d8dd1f45-2e46-4d9a-892b-69d1dd3be0a3","name":"Build Log Entry","type":"n8n-nodes-base.set","typeVersion":3.5,"position":[224,0]},
+    {"parameters":{"operation":"insert","collection":"logs","fields":"timestamp,level,event,message,meta","options":{}},"id":"1b32da6d-63c2-4360-ba14-e1b1f1177d90","name":"Insert Log","type":"n8n-nodes-base.mongoDb","typeVersion":1.5,"position":[448,0],"credentials":{"mongoDb":{"name":"MongoDB Atlas"}}}
+  ],
+  "connections": {
+    "Start Write Log": {"main":[[{"node":"Build Log Entry","type":"main","index":0}]]},
+    "Build Log Entry": {"main":[[{"node":"Insert Log","type":"main","index":0}]]}
+  },
+  "settings": {"executionOrder":"v1"}
+}

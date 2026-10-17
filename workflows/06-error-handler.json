@@ -1,0 +1,15 @@
+{
+  "name": "06 Error Handler",
+  "nodes": [
+    {"parameters":{},"id":"62f2ea0d-f7d4-4ce7-b908-d3b774e19a0c","name":"Error Trigger","type":"n8n-nodes-base.errorTrigger","typeVersion":1,"position":[0,0]},
+    {"parameters":{"assignments":{"assignments":[{"id":"err-level","name":"level","value":"error","type":"string"},{"id":"err-event","name":"event","value":"workflow_error","type":"string"},{"id":"err-message","name":"message","value":"={{ $json.workflow.name + \": \" + ($json.execution.error?.message || \"unknown error\") }}","type":"string"},{"id":"err-meta","name":"meta","value":"={{ { \"workflow\": $json.workflow.name, \"executionId\": $json.execution.id, \"lastNode\": $json.execution.lastNodeExecuted, \"executionUrl\": $json.execution.url } }}","type":"object"}]},"options":{}},"id":"0120626e-f073-47d4-bf9c-5f315d998e19","name":"Build Error Log","type":"n8n-nodes-base.set","typeVersion":3.5,"position":[224,0]},
+    {"parameters":{"workflowId":{"__rl":true,"mode":"list","value":"oIoJ5NtUOrYodv4m","cachedResultName":"03 Write Log"},"options":{}},"id":"dbbfb015-0f7a-45ac-98d0-372adca32473","name":"Write Log - Error","type":"n8n-nodes-base.executeWorkflow","typeVersion":1.4,"position":[448,0],"onError":"continueRegularOutput"},
+    {"parameters":{"sendTo":"tasmiasikdertaufa@gmail.com","subject":"=API Monitor error in {{ $(\"Build Error Log\").first().json.meta.workflow }}","emailType":"text","message":"=A workflow failed.\n\nWorkflow: {{ $(\"Build Error Log\").first().json.meta.workflow }}\nLast node: {{ $(\"Build Error Log\").first().json.meta.lastNode }}\nError: {{ $(\"Build Error Log\").first().json.message }}\nExecution: {{ $(\"Build Error Log\").first().json.meta.executionUrl }}","options":{"appendAttribution":false}},"id":"cde1c716-27ad-480a-9764-acbc8c5a1ae8","name":"Send Error Email","type":"n8n-nodes-base.gmail","typeVersion":2.2,"position":[672,0],"credentials":{"gmailOAuth2":{"name":"Gmail account"}}}
+  ],
+  "connections": {
+    "Error Trigger": {"main":[[{"node":"Build Error Log","type":"main","index":0}]]},
+    "Build Error Log": {"main":[[{"node":"Write Log - Error","type":"main","index":0}]]},
+    "Write Log - Error": {"main":[[{"node":"Send Error Email","type":"main","index":0}]]}
+  },
+  "settings": {"executionOrder":"v1"}
+}

@@ -1,0 +1,10 @@
+[
+  {"api_name":"PatientDataAPI","response_time_ms":1200,"status_code":200,"records_returned":50},
+  {"api_name":"AppointmentAPI","response_time_ms":5500,"status_code":500,"records_returned":0},
+  {"api_name":"BillingAPI","response_time_ms":3400,"status_code":200,"records_returned":12},
+  {"api_name":"LabResultsAPI","response_time_ms":900,"status_code":200,"records_returned":0},
+  {"api_name":"PharmacyAPI","response_time_ms":700,"status_code":404,"records_returned":0},
+  {"api_name":"InsuranceAPI","response_time_ms":800,"status_code":200},
+  {"api_name":"NotificationAPI","response_time_ms":"slow","status_code":200,"records_returned":5},
+  {"response_time_ms":500,"status_code":200,"records_returned":5}
+]

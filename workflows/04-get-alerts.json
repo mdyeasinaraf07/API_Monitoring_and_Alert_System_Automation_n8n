@@ -1,0 +1,15 @@
+{
+  "name": "04 Get Alerts",
+  "nodes": [
+    {"parameters":{"path":"alerts","responseMode":"responseNode","options":{"allowedOrigins":"*"}},"id":"81fe9743-a6cc-4e29-9030-16a8cbba511c","name":"Alerts Webhook","type":"n8n-nodes-base.webhook","typeVersion":2.2,"position":[0,0],"webhookId":"7d10b732-ba9d-46ef-b188-0f0d0c6ac4f6"},
+    {"parameters":{"collection":"alerts","options":{"sort":"{\"createdAt\": -1}"},"query":"{\"status\":\"active\"}"},"id":"00ffa12b-cecd-4cd6-a9a7-d73042b2ab48","name":"Find Active Alerts","type":"n8n-nodes-base.mongoDb","typeVersion":1.5,"position":[224,0],"alwaysOutputData":true,"credentials":{"mongoDb":{"name":"MongoDB Atlas"}}},
+    {"parameters":{"jsCode":"const alerts = $input.all()\n  .map(function (i) { return i.json; })\n  .filter(function (a) { return a.alertId; })\n  .map(function (a) { const c = Object.assign({}, a); delete c._id; return c; });\nreturn [{ json: { count: alerts.length, alerts: alerts } }];"},"id":"65c5b772-139f-4e1d-a5b2-f6c1bb2d6b09","name":"Format Alerts","type":"n8n-nodes-base.code","typeVersion":2,"position":[448,0]},
+    {"parameters":{"respondWith":"json","responseBody":"={{ $json }}","options":{"responseCode":200}},"id":"a5e7e612-4b2a-49f0-bb1d-a26c1ced4bca","name":"Respond Alerts","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[672,0]}
+  ],
+  "connections": {
+    "Alerts Webhook": {"main":[[{"node":"Find Active Alerts","type":"main","index":0}]]},
+    "Find Active Alerts": {"main":[[{"node":"Format Alerts","type":"main","index":0}]]},
+    "Format Alerts": {"main":[[{"node":"Respond Alerts","type":"main","index":0}]]}
+  },
+  "settings": {"executionOrder":"v1","errorWorkflow":"oWI8oAeRhXrZg0Ak"}
+}

@@ -1,0 +1,29 @@
+{
+  "name": "05 Resolve Alert",
+  "nodes": [
+    {"parameters":{"httpMethod":"POST","path":"resolve","responseMode":"responseNode","options":{"allowedOrigins":"*"}},"id":"c2e5dd89-c6d3-47fb-b346-7bceb8a1128b","name":"Resolve Webhook","type":"n8n-nodes-base.webhook","typeVersion":2.2,"position":[0,192],"webhookId":"853aa6c0-5cfb-499e-8276-180ef674f8a3"},
+    {"parameters":{"assignments":{"assignments":[{"id":"read-alert-id","name":"alertId","value":"={{ $json.body?.alertId || \"\" }}","type":"string"}]},"options":{}},"id":"04127efa-865f-441b-9143-fcb159eabeaa","name":"Read Alert Id","type":"n8n-nodes-base.set","typeVersion":3.5,"position":[224,192]},
+    {"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":2},"conditions":[{"id":"has-id","leftValue":"={{ $json.alertId }}","rightValue":"","operator":{"type":"string","operation":"notEmpty","singleValue":true}}],"combinator":"and"},"options":{}},"id":"3b8ed94d-2265-4754-bba7-787b7655f3bb","name":"Has Alert Id?","type":"n8n-nodes-base.if","typeVersion":2.3,"position":[448,192]},
+    {"parameters":{"collection":"alerts","options":{},"query":"={{ JSON.stringify({ alertId: $json.alertId, status: \"active\" }) }}"},"id":"618b3d22-50ed-4882-a362-45436127235b","name":"Find Alert","type":"n8n-nodes-base.mongoDb","typeVersion":1.5,"position":[640,16],"alwaysOutputData":true,"credentials":{"mongoDb":{"name":"MongoDB Atlas"}}},
+    {"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":2},"conditions":[{"id":"found-id","leftValue":"={{ $json.alertId || \"\" }}","rightValue":"","operator":{"type":"string","operation":"notEmpty","singleValue":true}}],"combinator":"and"},"options":{}},"id":"e0c3863e-139e-458e-94ce-0b290a382e37","name":"Alert Found?","type":"n8n-nodes-base.if","typeVersion":2.3,"position":[848,16]},
+    {"parameters":{"assignments":{"assignments":[{"id":"res-alert-id","name":"alertId","value":"={{ $json.alertId }}","type":"string"},{"id":"res-status","name":"status","value":"resolved","type":"string"},{"id":"res-time","name":"resolvedAt","value":"={{ $now.toISO() }}","type":"string"}]},"options":{}},"id":"825c0447-2d13-4171-a325-d4825463d5be","name":"Mark Resolved","type":"n8n-nodes-base.set","typeVersion":3.5,"position":[992,-128]},
+    {"parameters":{"operation":"update","collection":"alerts","updateKey":"alertId","fields":"status,resolvedAt","options":{}},"id":"2919d4c5-4965-40e5-b155-161196787741","name":"Update Alert Status","type":"n8n-nodes-base.mongoDb","typeVersion":1.5,"position":[1168,-128],"credentials":{"mongoDb":{"name":"MongoDB Atlas"}}},
+    {"parameters":{"respondWith":"json","responseBody":"={{ { \"status\": \"ok\", \"message\": \"Alert resolved\", \"alertId\": $(\"Mark Resolved\").first().json.alertId } }}","options":{"responseCode":200}},"id":"6bb5d2a1-29bd-490b-8d93-d420909318ad","name":"Respond Resolved","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1360,-128]},
+    {"parameters":{"assignments":{"assignments":[{"id":"rl-level","name":"level","value":"info","type":"string"},{"id":"rl-event","name":"event","value":"alert_resolved","type":"string"},{"id":"rl-message","name":"message","value":"=Alert {{ $(\"Mark Resolved\").first().json.alertId }} marked as resolved","type":"string"},{"id":"rl-meta","name":"meta","value":"={{ { \"alertId\": $(\"Mark Resolved\").first().json.alertId } }}","type":"object"}]},"options":{}},"id":"6e1e2678-ef2c-4b23-ac00-7fadcd126ca7","name":"Build Resolve Log","type":"n8n-nodes-base.set","typeVersion":3.5,"position":[1552,-128]},
+    {"parameters":{"workflowId":{"__rl":true,"mode":"list","value":"oIoJ5NtUOrYodv4m","cachedResultName":"03 Write Log"},"options":{}},"id":"4e3aad7d-2794-48f6-9b64-be0daf2ab00b","name":"Write Log - Resolve","type":"n8n-nodes-base.executeWorkflow","typeVersion":1.4,"position":[1744,-128],"onError":"continueRegularOutput"},
+    {"parameters":{"respondWith":"json","responseBody":"={{ { \"status\": \"error\", \"error\": \"Active alert not found\" } }}","options":{"responseCode":404}},"id":"81ab22c8-6ca7-422f-a401-a7422b221827","name":"Respond Not Found","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[1168,128]},
+    {"parameters":{"respondWith":"json","responseBody":"={{ { \"status\": \"error\", \"error\": \"alertId is required\" } }}","options":{"responseCode":400}},"id":"04419a49-0496-4351-9bdb-ec779c487f01","name":"Respond Missing Id","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.5,"position":[816,304]}
+  ],
+  "connections": {
+    "Resolve Webhook": {"main":[[{"node":"Read Alert Id","type":"main","index":0}]]},
+    "Read Alert Id": {"main":[[{"node":"Has Alert Id?","type":"main","index":0}]]},
+    "Has Alert Id?": {"main":[[{"node":"Find Alert","type":"main","index":0}],[{"node":"Respond Missing Id","type":"main","index":0}]]},
+    "Find Alert": {"main":[[{"node":"Alert Found?","type":"main","index":0}]]},
+    "Alert Found?": {"main":[[{"node":"Mark Resolved","type":"main","index":0}],[{"node":"Respond Not Found","type":"main","index":0}]]},
+    "Mark Resolved": {"main":[[{"node":"Update Alert Status","type":"main","index":0}]]},
+    "Update Alert Status": {"main":[[{"node":"Respond Resolved","type":"main","index":0}]]},
+    "Respond Resolved": {"main":[[{"node":"Build Resolve Log","type":"main","index":0}]]},
+    "Build Resolve Log": {"main":[[{"node":"Write Log - Resolve","type":"main","index":0}]]}
+  },
+  "settings": {"executionOrder":"v1","errorWorkflow":"oWI8oAeRhXrZg0Ak"}
+}
