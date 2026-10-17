@@ -1,4 +1,4 @@
-# API Monitor System — Intelligent API Monitoring & Alert System
+# API Monitoring & Alert System — Intelligent API Monitoring & Alert System
 
 An API health monitoring and AI-powered alerting system built on **n8n** (a Node.js-based
 workflow automation platform), **MongoDB Atlas**, and **Google Gemini** for alert text
