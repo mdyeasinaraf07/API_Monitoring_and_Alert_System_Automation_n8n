@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>API Monitor — Alert Console</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #151b23;
+    --panel-border: #262d38;
+    --text: #e6e9ef;
+    --text-dim: #8b93a1;
+    --accent: #4f8cff;
+    --critical: #ef4444;
+    --high: #f59e0b;
+    --medium: #eab308;
+    --ok: #22c55e;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+  header {
+    padding: 28px 24px 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  header h1 {
+    font-size: 22px;
+    font-weight: 650;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0 24px;
+  }
+  .summary-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .summary-card .count {
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-card .label {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .summary-card.critical .count { color: var(--critical); }
+  .summary-card.high .count { color: var(--high); }
+  .summary-card.medium .count { color: var(--medium); }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  button {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 550;
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button:active { transform: translateY(1px); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .alert-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-left: 4px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .alert-card.critical { border-left-color: var(--critical); }
+  .alert-card.high { border-left-color: var(--high); }
+  .alert-card.medium { border-left-color: var(--medium); }
+
+  .alert-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .alert-api {
+    font-weight: 650;
+    font-size: 15px;
+  }
+  .badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 650;
+    padding: 2px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.02em;
+  }
+  .badge.critical { background: rgba(239,68,68,0.15); color: var(--critical); }
+  .badge.high { background: rgba(245,158,11,0.15); color: var(--high); }
+  .badge.medium { background: rgba(234,179,8,0.15); color: var(--medium); }
+  .badge.source-ai { background: rgba(79,140,255,0.15); color: var(--accent); }
+  .badge.source-fallback { background: rgba(139,147,161,0.15); color: var(--text-dim); }
+
+  .alert-message {
+    font-size: 14px;
+    color: var(--text);
+    margin: 8px 0;
+  }
+  .alert-meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .alert-actions {
+    margin-top: 12px;
+  }
+  .alert-actions button {
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .state-box {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .state-box .big { font-size: 16px; color: var(--text); margin-bottom: 4px; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>API Monitor</h1>
+  <p>Live anomaly alerts across monitored healthcare API endpoints.</p>
+</header>
+
+<main>
+  <div class="summary">
+    <div class="summary-card critical">
+      <div class="count" id="count-critical">—</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="summary-card high">
+      <div class="count" id="count-high">—</div>
+      <div class="label">High</div>
+    </div>
+    <div class="summary-card medium">
+      <div class="count" id="count-medium">—</div>
+      <div class="label">Medium</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="btn-refresh">Refresh</button>
+    <button id="btn-sample">Run sample batch</button>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_BASE = "https://taime7.app.n8n.cloud/webhook";
+
+  const el = {
+    list: document.getElementById("list"),
+    critical: document.getElementById("count-critical"),
+    high: document.getElementById("count-high"),
+    medium: document.getElementById("count-medium"),
+    refresh: document.getElementById("btn-refresh"),
+    sample: document.getElementById("btn-sample"),
+    toast: document.getElementById("toast"),
+  };
+
+  function showToast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.add("show");
+    setTimeout(() => el.toast.classList.remove("show"), 2200);
+  }
+
+  function timeAgo(iso) {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.floor(hrs / 24) + "d ago";
+  }
+
+  function renderState(message, sub) {
+    el.list.innerHTML = `<div class="state-box"><div class="big">${message}</div><div>${sub || ""}</div></div>`;
+  }
+
+  function renderAlerts(alerts) {
+    const counts = { critical: 0, high: 0, medium: 0 };
+    alerts.forEach(a => { if (counts[a.severity] !== undefined) counts[a.severity]++; });
+    el.critical.textContent = counts.critical;
+    el.high.textContent = counts.high;
+    el.medium.textContent = counts.medium;
+
+    if (alerts.length === 0) {
+      renderState("No active alerts", "All monitored APIs are healthy.");
+      return;
+    }
+
+    el.list.innerHTML = alerts.map(a => `
+      <div class="alert-card ${a.severity}">
+        <div class="alert-top">
+          <div class="alert-api">${a.apiName}</div>
+          <div class="badges">
+            <span class="badge ${a.severity}">${a.severity}</span>
+            <span class="badge source-${a.messageSource}">${a.messageSource === "ai" ? "AI" : "fallback"}</span>
+          </div>
+        </div>
+        <div class="alert-message">${a.message}</div>
+        <div class="alert-meta">
+          <span>occurrences: ${a.occurrences}</span>
+          <span>status: ${a.details?.statusCode ?? "—"}</span>
+          <span>latency: ${a.details?.responseTimeMs ?? "—"}ms</span>
+          <span>${timeAgo(a.lastSeenAt)}</span>
+        </div>
+        <div class="alert-actions">
+          <button data-resolve="${a.alertId}">Resolve</button>
+        </div>
+      </div>
+    `).join("");
+
+    el.list.querySelectorAll("[data-resolve]").forEach(btn => {
+      btn.addEventListener("click", () => resolveAlert(btn.getAttribute("data-resolve")));
+    });
+  }
+
+  async function loadAlerts() {
+    renderState("Loading alerts…");
+    try {
+      const res = await fetch(`${API_BASE}/alerts`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      renderAlerts(data.alerts || []);
+    } catch (e) {
+      renderState("Couldn't load alerts", e.message);
+    }
+  }
+
+  async function resolveAlert(alertId) {
+    try {
+      const res = await fetch(`${API_BASE}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertId }),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      showToast("Alert resolved");
+      loadAlerts();
+    } catch (e) {
+      showToast("Resolve failed: " + e.message);
+    }
+  }
+
+  async function runSample() {
+    el.sample.disabled = true;
+    showToast("Sending sample batch…");
+    const sample = [
+      { api_name: "PatientDataAPI", response_time_ms: 1200, status_code: 200, records_returned: 50 },
+      { api_name: "AppointmentAPI", response_time_ms: 5500, status_code: 500, records_returned: 0 },
+    ];
+    try {
+      const res = await fetch(`${API_BASE}/monitor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sample),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      showToast("Sample batch processed");
+      loadAlerts();
+    } catch (e) {
+      showToast("Sample batch failed: " + e.message);
+    } finally {
+      el.sample.disabled = false;
+    }
+  }
+
+  el.refresh.addEventListener("click", loadAlerts);
+  el.sample.addEventListener("click", runSample);
+
+  loadAlerts();
+</script>
+
+</body>
+</html>
